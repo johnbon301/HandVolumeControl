@@ -6,7 +6,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 class handDectector():
-    def __init__(self, mode = False, maxH = 2, dectectionCount = 0.5, trackConf = 0.5):
+    def __init__(self, mode = False, maxH = 2, dectectionCount = 0.8, trackConf = 0.8):
         self.mode = mode
         self.maxH = maxH
         self.dectectionCount = dectectionCount
