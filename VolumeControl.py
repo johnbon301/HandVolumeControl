@@ -32,36 +32,41 @@ while True:  # infinite loop
     LMpositions = detector.findPosition(frame) # lets us know where each landmark position is at
 
     if len(LMpositions) != 0:
-        print(LMpositions[4], LMpositions[8])
+        # cv2.putText(frame, f' Volume: Locked', (100, 50), cv2.FONT_HERSHEY_PLAIN, 2,
+        #             (255, 0, 255), 2)  # adds and edits the window for "Image"
+        if len(LMpositions) > 1:
+            print(LMpositions[4], LMpositions[8])
 
-        x1, y1 = LMpositions[4][1], LMpositions[4][2]
-        x2, y2 = LMpositions[8][1], LMpositions[8][2]
-        xm, ym = (x1 + x2) / 2, (y1 + y2) / 2
+            x1, y1 = LMpositions[4][1], LMpositions[4][2]
+            x2, y2 = LMpositions[8][1], LMpositions[8][2]
+            xm, ym = (x1 + x2) / 2, (y1 + y2) / 2
 
-        cv2.circle(frame, (x1, y1), 2, (255, 0, 0), 3) # circle on thumb point tip
-        cv2.circle(frame, (x2, y2), 2, (255, 0, 0), 3) # circle on the pointer finger tip
-        cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 3) # a line between landmark 4 and 8
-        cv2.circle(frame, (int(xm), int(ym)), 2, (255, 0, 0), 3) # the mid point of landmark 4 and 8
+            cv2.circle(frame, (x1, y1), 2, (255, 0, 0), 3) # circle on thumb point tip
+            cv2.circle(frame, (x2, y2), 2, (255, 0, 0), 3) # circle on the pointer finger tip
+            cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 3) # a line between landmark 4 and 8
+            cv2.circle(frame, (int(xm), int(ym)), 2, (255, 0, 0), 3) # the mid point of landmark 4 and 8
 
-        length = math.hypot(x2 - x1, y2 - y1) # find the distance between two points
+            length = math.hypot(x2 - x1, y2 - y1) # find the distance between two points
 
-        # create a normal curve rather than a spontaneous jump or gamma curve
-        norm = np.interp(length, [30,200], [0.0,1.0])  # normalize the distance to 0-1
-        norm = norm ** 1.5  # perceptual curve
-        vol = np.interp(norm, [0, 1], [minVolume, maxVolume]) # map to dB range
-        vol = max(minVolume, min(vol, maxVolume)) # safe edge cases
+            # create a normal curve rather than a spontaneous jump or gamma curve
+            norm = np.interp(length, [30,200], [0.0,1.0])  # normalize the distance to 0-1
+            norm = norm ** 1.5  # perceptual curve
+            vol = np.interp(norm, [0, 1], [minVolume, maxVolume]) # map to dB range
+            vol = max(minVolume, min(vol, maxVolume)) # safe edge cases
 
-        # smooth volume changes
-        vol = prevVol + 0.2 * (vol - prevVol)
-        prevVol = vol
+            # smooth volume changes
+            vol = prevVol + 0.2 * (vol - prevVol)
+            prevVol = vol
 
-        volume.SetMasterVolumeLevel(vol, None) # controls the volume
+            volume.SetMasterVolumeLevel(vol, None) # controls the volume
 
 
-        if length < 30: # for when your fingers reach a min point
-            cv2.circle(frame, (int(xm), int(ym)), 2, (128, 0, 128), 3)
-        elif length > 200: # when your fingers reach a max point
-            cv2.circle(frame, (int(xm), int(ym)), 2, (144, 238, 144), 3)
+            if length < 30: # for when your fingers reach a min point
+                cv2.circle(frame, (int(xm), int(ym)), 2, (128, 0, 128), 3)
+            elif length > 200: # when your fingers reach a max point
+                cv2.circle(frame, (int(xm), int(ym)), 2, (144, 238, 144), 3)
+            # cv2.putText(frame, f' Volume: Unlocked', (100, 50), cv2.FONT_HERSHEY_PLAIN, 2,
+            #             (255, 0, 255), 2)  # adds and edits the window for "Image"
 
     # sets the fps
     cTime = time.time()

@@ -38,5 +38,14 @@ class handDectector():
                 h, w, c = frame.shape
                 cx, cy = int(LM.x * w), int(LM.y * h)
                 lmList.append([id, cx, cy])
-
         return lmList
+    def num_hands(self, frame, draw = True):
+
+        handList = []
+        if self.results.multi_hand_landmarks:
+            Hands = self.results.multi_hand_landmarks
+            for number_hands in range(len(Hands)):
+                handList.append(Hands[number_hands])
+
+        return handList
+
