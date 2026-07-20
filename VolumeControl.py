@@ -3,7 +3,9 @@ import numpy as np
 import cv2
 import Handmovements as Hm
 import math
-from pycaw.pycaw import AudioUtilities
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
 
 pTime = 0
@@ -15,13 +17,14 @@ cap.set(4, 480)
 detector = Hm.handDectector() # creates an object called detector
 
 device = AudioUtilities.GetSpeakers()
-volume = device.EndpointVolume
+interface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+volume = cast(interface, POINTER(IAudioEndpointVolume))
 # print(f"Audio output: {device.FriendlyName}")
 # print(f"- Muted: {bool(volume.GetMute())}")
 # print(f"- Volume level: {volume.GetMasterVolumeLevel()} dB")
 # print(f"- Volume range: {volume.GetVolumeRange()[0]} dB - {volume.GetVolumeRange()[1]} dB")
-volumerange = volume.GetVolumeRange()
 
+volumerange = volume.GetVolumeRange()
 minVolume = volumerange[0]
 maxVolume = volumerange[1]
 prevVol = minVolume
@@ -34,7 +37,7 @@ while True:  # infinite loop
     if len(LMpositions) != 0:
         # cv2.putText(frame, f' Volume: Locked', (100, 50), cv2.FONT_HERSHEY_PLAIN, 2,
         #             (255, 0, 255), 2)  # adds and edits the window for "Image"
-        if len(LMpositions) > 1:
+        if len(LMpositions) > 8:
             print(LMpositions[4], LMpositions[8])
 
             x1, y1 = LMpositions[4][1], LMpositions[4][2]
@@ -58,7 +61,7 @@ while True:  # infinite loop
             vol = prevVol + 0.2 * (vol - prevVol)
             prevVol = vol
 
-            volume.SetMasterVolumeLevel(vol, None) # controls the volume
+            volume.SetMasterVolumeLevel(float(vol), None) # controls the volume
 
 
             if length < 30: # for when your fingers reach a min point
@@ -76,4 +79,5 @@ while True:  # infinite loop
     cv2.putText(frame, f' fps: {str(int(fps))}', (10, 50), cv2.FONT_HERSHEY_PLAIN, 2,
                 (255, 0, 255), 2) # adds and edits the window for "Image"
     cv2.imshow("Image", frame)  # displays frame in a window called "image"
-    cv2.waitKey(1)  # sleep timer that wait for key press
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break  # sleep timer that wait for key press
