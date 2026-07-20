@@ -3,8 +3,6 @@ import numpy as np
 import cv2
 import Handmovements as Hm
 import math
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
 
@@ -17,8 +15,7 @@ cap.set(4, 480)
 detector = Hm.handDectector() # creates an object called detector
 
 device = AudioUtilities.GetSpeakers()
-interface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-volume = cast(interface, POINTER(IAudioEndpointVolume))
+volume = device.EndpointVolume
 # print(f"Audio output: {device.FriendlyName}")
 # print(f"- Muted: {bool(volume.GetMute())}")
 # print(f"- Volume level: {volume.GetMasterVolumeLevel()} dB")
@@ -32,11 +29,14 @@ prevVol = minVolume
 while True:  # infinite loop
     success, frame = cap.read()  # returns to values that successfully captures the frame (always have)
     frame = detector.findHands(frame) #outputs a frame from the camera which finds the hands
+
+    hands = detector.num_hands(frame)
+    hand_count = len(hands) if hands else 0
+
+
     LMpositions = detector.findPosition(frame) # lets us know where each landmark position is at
 
     if len(LMpositions) != 0:
-        # cv2.putText(frame, f' Volume: Locked', (100, 50), cv2.FONT_HERSHEY_PLAIN, 2,
-        #             (255, 0, 255), 2)  # adds and edits the window for "Image"
         if len(LMpositions) > 8:
             print(LMpositions[4], LMpositions[8])
 
@@ -49,27 +49,32 @@ while True:  # infinite loop
             cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 3) # a line between landmark 4 and 8
             cv2.circle(frame, (int(xm), int(ym)), 2, (255, 0, 0), 3) # the mid point of landmark 4 and 8
 
-            length = math.hypot(x2 - x1, y2 - y1) # find the distance between two points
+            if hand_count == 2:
+                cv2.putText(frame, f' Volume: Unlocked', (150, 50), cv2.FONT_HERSHEY_PLAIN, 2,
+                            (255, 0, 255), 2)  # adds and edits the window for "Image"
+                length = math.hypot(x2 - x1, y2 - y1) # find the distance between two points
 
-            # create a normal curve rather than a spontaneous jump or gamma curve
-            norm = np.interp(length, [30,200], [0.0,1.0])  # normalize the distance to 0-1
-            norm = norm ** 1.5  # perceptual curve
-            vol = np.interp(norm, [0, 1], [minVolume, maxVolume]) # map to dB range
-            vol = max(minVolume, min(vol, maxVolume)) # safe edge cases
+                # create a normal curve rather than a spontaneous jump or gamma curve
+                norm = np.interp(length, [30,150], [0.0,1.0])  # normalize the distance to 0-1
+                norm = norm ** 1.5  # perceptual curve
+                vol = np.interp(norm, [0, 1], [minVolume, maxVolume]) # map to dB range
+                vol = max(minVolume, min(vol, maxVolume)) # safe edge cases
 
-            # smooth volume changes
-            vol = prevVol + 0.2 * (vol - prevVol)
-            prevVol = vol
+                # smooth volume changes
+                vol = prevVol + 0.2 * (vol - prevVol)
+                prevVol = vol
 
-            volume.SetMasterVolumeLevel(float(vol), None) # controls the volume
+                volume.SetMasterVolumeLevel(float(vol), None) # controls the volume
 
 
-            if length < 30: # for when your fingers reach a min point
-                cv2.circle(frame, (int(xm), int(ym)), 2, (128, 0, 128), 3)
-            elif length > 200: # when your fingers reach a max point
-                cv2.circle(frame, (int(xm), int(ym)), 2, (144, 238, 144), 3)
-            # cv2.putText(frame, f' Volume: Unlocked', (100, 50), cv2.FONT_HERSHEY_PLAIN, 2,
-            #             (255, 0, 255), 2)  # adds and edits the window for "Image"
+                if length < 30: # for when your fingers reach a min point
+                    cv2.circle(frame, (int(xm), int(ym)), 2, (128, 0, 128), 3)
+                elif length > 200: # when your fingers reach a max point
+                    cv2.circle(frame, (int(xm), int(ym)), 2, (144, 238, 144), 3)
+            else:
+                cv2.putText(frame, f' Volume: Locked', (150, 50), cv2.FONT_HERSHEY_PLAIN, 2,
+                    (255, 0, 255), 2)  # adds and edits the window for "Image"
+
 
     # sets the fps
     cTime = time.time()
@@ -81,3 +86,6 @@ while True:  # infinite loop
     cv2.imshow("Image", frame)  # displays frame in a window called "image"
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break  # sleep timer that wait for key press
+
+cap.release()
+cv2.destroyAllWindows()
