@@ -16,10 +16,6 @@ detector = Hm.handDectector() # creates an object called detector
 
 device = AudioUtilities.GetSpeakers()
 volume = device.EndpointVolume
-# print(f"Audio output: {device.FriendlyName}")
-# print(f"- Muted: {bool(volume.GetMute())}")
-# print(f"- Volume level: {volume.GetMasterVolumeLevel()} dB")
-# print(f"- Volume range: {volume.GetVolumeRange()[0]} dB - {volume.GetVolumeRange()[1]} dB")
 
 volumerange = volume.GetVolumeRange()
 minVolume = volumerange[0]
